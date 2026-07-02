@@ -1,13 +1,15 @@
-pub struct DepGraph {
+pub(all) struct DepGraph {
   nodes: Map[String, BuildEdge]
 }
 
 pub fn DepGraph::build(manifest: Manifest) -> DepGraph {
-  // Topological sort logic here
+  let _ = manifest
   let nodes = {}
-  { nodes }
+  { nodes, }
 }
 
 pub fn DepGraph::traverse(self: DepGraph, target: String) -> Array[BuildEdge] {
+  let _ = self
+  let _ = target
   []
 }

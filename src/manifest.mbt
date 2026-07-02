@@ -1,14 +1,14 @@
-pub struct Manifest {
+pub(all) struct Manifest {
   rules: Map[String, Rule]
   builds: Array[BuildEdge]
 }
 
-pub struct Rule {
+pub(all) struct Rule {
   name: String
   command: String
 }
 
-pub struct BuildEdge {
+pub(all) struct BuildEdge {
   rule: String
   inputs: Array[String]
   outputs: Array[String]

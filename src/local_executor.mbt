@@ -1,5 +1,7 @@
-pub struct LocalExecutor {}
+pub(all) struct LocalExecutor {}
 
-impl Executor for LocalExecutor with run(self, edge) {
+pub impl Executor for LocalExecutor with run(self : LocalExecutor, edge : BuildEdge) -> Result[Unit, String] {
+  let _ = self
+  let _ = edge
   Ok(())
 }

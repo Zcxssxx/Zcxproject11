@@ -1,4 +1,4 @@
-pub enum Token {
+pub(all) enum Token {
   Ident(String)
   Colon
   Equal
@@ -8,4 +8,4 @@ pub enum Token {
   Indent
   Eof
   Error(String)
-} derive(Show, Eq)
+} derive(Debug, Eq)

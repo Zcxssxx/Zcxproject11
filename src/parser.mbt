@@ -13,7 +13,7 @@ fn Parser::advance(self : Parser) -> Unit {
   self.current_token = self.lexer.next_token()
 }
 
-pub fn Parser::parse(self : Parser) -> Manifest!ParseError {
+pub fn Parser::parse(self : Parser) -> Manifest raise ParseError {
   let rules = {}
   let builds = []
   while self.current_token != Eof {

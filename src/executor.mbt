@@ -1,3 +1,3 @@
 pub trait Executor {
-  run(self, edge: BuildEdge) -> Result[Unit, String]
+  run(Self, BuildEdge) -> Result[Unit, String]
 }

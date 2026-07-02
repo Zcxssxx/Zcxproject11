@@ -51,5 +51,5 @@ fn Lexer::parse_ident(self : Lexer) -> Token {
     self.advance()
     return Error("Unexpected character: " + err_ch.to_string())
   }
-  Ident(self.input.substring(start~, end=self.pos))
+  Ident(self.input[start:self.pos].to_owned())
 }
