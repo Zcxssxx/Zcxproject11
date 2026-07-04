@@ -3,9 +3,17 @@ pub(all) struct Scheduler[E] {
   executor: E
 }
 
-pub fn[E : Executor] Scheduler::run_all(self: Scheduler[E]) -> Result[Unit, String] {
-  let dummy_edge = BuildEdge::{ rule: "", inputs: [], outputs: [] }
-  let _ = self.executor.run(dummy_edge)
-  let _ = self.graph
-  Ok(())
+pub fn[E : Executor] Scheduler::run_all(self: Scheduler[E], target: String) -> Result[Unit, String] {
+  match self.graph.traverse(target) {
+    Ok(edges) => {
+      for edge in edges {
+        match self.executor.run(edge, self.graph.rules) {
+          Ok(_) => ()
+          Err(e) => return Err(e)
+        }
+      }
+      Ok(())
+    }
+    Err(e) => Err(e)
+  }
 }

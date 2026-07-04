@@ -5,6 +5,13 @@ pub struct Lexer {
   mut col : Int
 }
 
+fn get_char_at(s : String, i : Int) -> Char {
+  match s[i].to_int().to_char() {
+    Some(c) => c
+    None => ' '
+  }
+}
+
 pub fn Lexer::new(input : String) -> Lexer {
   { input, pos: 0, line: 1, col: 1 }
 }
@@ -12,12 +19,12 @@ pub fn Lexer::new(input : String) -> Lexer {
 pub fn Lexer::next_token(self : Lexer) -> Token {
   self.skip_whitespace()
   if self.pos >= self.input.length() { return Eof }
-  let ch = self.input[self.pos]
+  let ch = get_char_at(self.input, self.pos)
   if ch == ':' { self.advance(); return Colon }
   if ch == '=' { self.advance(); return Equal }
   if ch == '|' {
     self.advance()
-    if self.pos < self.input.length() && self.input[self.pos] == '|' {
+    if self.pos < self.input.length() && get_char_at(self.input, self.pos) == '|' {
       self.advance()
       return PipePipe
     }
@@ -32,7 +39,7 @@ fn Lexer::advance_line(self : Lexer) -> Unit { self.pos += 1; self.line += 1; se
 
 fn Lexer::skip_whitespace(self : Lexer) -> Unit {
   while self.pos < self.input.length() {
-    let ch = self.input[self.pos]
+    let ch = get_char_at(self.input, self.pos)
     if ch == ' ' || ch == '\t' || ch == '\r' { self.advance() }
     else { break }
   }
@@ -41,15 +48,28 @@ fn Lexer::skip_whitespace(self : Lexer) -> Unit {
 fn Lexer::parse_ident(self : Lexer) -> Token {
   let start = self.pos
   while self.pos < self.input.length() {
-    let ch = self.input[self.pos]
-    if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_' || ch == '-' || ch == '.' {
+    let ch = get_char_at(self.input, self.pos)
+    if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_' || ch == '-' || ch == '.' || ch == '$' {
       self.advance()
     } else { break }
   }
   if start == self.pos {
-    let err_ch = self.input[self.pos]
+    let err_ch = get_char_at(self.input, self.pos)
     self.advance()
-    return Error("Unexpected character: " + err_ch.to_string())
+    return Error("Unexpected character: \{err_ch}")
   }
   Ident(self.input[start:self.pos].to_owned())
+}
+
+pub fn Lexer::read_rest_of_line(self : Lexer) -> String {
+  self.skip_whitespace()
+  let start = self.pos
+  while self.pos < self.input.length() {
+    let ch = get_char_at(self.input, self.pos)
+    if ch == '\n' {
+      break
+    }
+    self.advance()
+  }
+  self.input[start:self.pos].to_owned()
 }
