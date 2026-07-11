@@ -1,24 +1,33 @@
+///|
 pub(all) struct DepGraph {
-  nodes: Map[String, BuildEdge]
-  rules: Map[String, Rule]
-  producer: Map[String, BuildEdge]
+  nodes : Map[String, BuildEdge]
+  rules : Map[String, Rule]
+  producer : Map[String, BuildEdge]
 }
 
-pub fn DepGraph::build(manifest: Manifest) -> DepGraph {
+///|
+pub fn DepGraph::build(manifest : Manifest) -> DepGraph {
+  let nodes : Map[String, BuildEdge] = {}
   let producer : Map[String, BuildEdge] = {}
   for edge in manifest.builds {
+    nodes[edge.key()] = edge
     for out in edge.outputs {
       producer[out] = edge
     }
   }
-  { nodes: {}, rules: manifest.rules, producer }
+  { nodes, rules: manifest.rules, producer }
 }
 
-pub fn DepGraph::traverse(self: DepGraph, target: String) -> Result[Array[BuildEdge], String] {
+///|
+pub fn DepGraph::traverse(
+  self : DepGraph,
+  target : String,
+) -> Result[Array[BuildEdge], String] {
   let result : Array[BuildEdge] = []
   let visiting : Map[String, Bool] = {}
   let visited : Map[String, Bool] = {}
-  
+  let scheduled : Map[String, Bool] = {}
+
   fn dfs(node : String) -> Result[Unit, String] {
     if visiting.contains(node) {
       return Err("Circular dependency detected at: " + node)
@@ -36,7 +45,11 @@ pub fn DepGraph::traverse(self: DepGraph, target: String) -> Result[Array[BuildE
             Err(e) => return Err(e)
           }
         }
-        result.push(edge)
+        let edge_key = edge.key()
+        if !scheduled.contains(edge_key) {
+          result.push(edge)
+          scheduled[edge_key] = true
+        }
       }
       None => ()
     }
@@ -44,7 +57,7 @@ pub fn DepGraph::traverse(self: DepGraph, target: String) -> Result[Array[BuildE
     visited[node] = true
     Ok(())
   }
-  
+
   match dfs(target) {
     Ok(_) => Ok(result)
     Err(e) => Err(e)

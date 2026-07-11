@@ -1,0 +1,7 @@
+import {
+  "Zcxssxx/moon-ninja" @src,
+}
+
+options(
+  "is-main": true,
+)

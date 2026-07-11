@@ -1,0 +1,8 @@
+rule cc
+  command = gcc -c $in -o $out
+rule link
+  command = gcc $in -o $out
+
+build util.o: cc util.c
+build main.o: cc main.c | generated.h
+build app: link main.o util.o
