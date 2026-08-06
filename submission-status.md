@@ -29,5 +29,5 @@ Last updated: 2026-08-06
 ## Mooncakes note
 
 - previous published version: `Zcxssxx/moon-ninja@0.1.1`
-- target release version: `Zcxssxx/moon-ninja@0.1.2`
-- publish only after the owner session confirms CI is green
+- published version: `Zcxssxx/moon-ninja@0.1.2`
+- package upload and independent `moon add` resolution verified
