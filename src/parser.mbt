@@ -18,7 +18,7 @@ fn Parser::advance(self : Parser) -> Unit {
 
 ///|
 pub fn Parser::parse(self : Parser) -> Manifest raise ParseError {
-  let rules : Map[String, Rule] = {}
+  let rules : Map[String, Rule] = Map([])
   let builds : Array[BuildEdge] = []
   while self.current_token != Eof {
     match self.current_token {

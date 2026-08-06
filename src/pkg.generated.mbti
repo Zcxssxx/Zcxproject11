@@ -1,0 +1,124 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Zcxssxx/moon-ninja"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn execute_command(String) -> Int
+
+// Errors
+pub suberror ParseError {
+  UnexpectedToken(Token, expected~ : String)
+  SyntaxError(String, line~ : Int, col~ : Int)
+} derive(@debug.Debug)
+
+// Types and methods
+pub(all) enum BuildDecision {
+  UpToDate
+  NeedsBuild(String)
+} derive(Eq, @debug.Debug)
+
+pub(all) struct BuildEdge {
+  rule : String
+  inputs : Array[String]
+  outputs : Array[String]
+}
+pub fn BuildEdge::evaluate_fingerprints(Self, Map[String, FileFingerprint], Map[String, FileFingerprint]) -> BuildDecision
+pub fn BuildEdge::evaluate_incremental(Self, Map[String, Int]) -> BuildDecision
+pub fn BuildEdge::key(Self) -> String
+pub fn BuildEdge::refresh_outputs(Self, Map[String, Int], Int) -> Int
+pub fn BuildEdge::render_command(Self, Map[String, Rule]) -> Result[String, String]
+
+pub(all) struct DepGraph {
+  nodes : Map[String, BuildEdge]
+  rules : Map[String, Rule]
+  producer : Map[String, BuildEdge]
+}
+pub fn DepGraph::build(Manifest) -> Self
+pub fn DepGraph::parallel_waves(Self, String) -> Result[Array[Array[BuildEdge]], String]
+pub fn DepGraph::strongly_connected_components(Self) -> Array[Array[String]]
+pub fn DepGraph::traverse(Self, String) -> Result[Array[BuildEdge], String]
+
+pub(all) struct DryRunExecutor {
+}
+pub impl Executor for DryRunExecutor
+
+pub(all) struct DryRunWaveExecutor {
+}
+pub impl WaveExecutor for DryRunWaveExecutor
+
+pub(all) struct FileFingerprint {
+  mtime_seconds : Int64
+  mtime_nanos : Int
+  size : Int
+  content_hash : String
+} derive(Eq, @debug.Debug)
+pub fn FileFingerprint::from_bytes(Bytes, mtime_seconds~ : Int64, mtime_nanos~ : Int) -> Self
+pub fn FileFingerprint::from_metadata(mtime_seconds~ : Int64, mtime_nanos~ : Int, size~ : Int, content_hash~ : String) -> Self
+pub fn FileFingerprint::is_newer_than(Self, Self) -> Bool
+
+pub struct Lexer {
+  input : String
+  mut pos : Int
+  mut line : Int
+  mut col : Int
+}
+pub fn Lexer::new(String) -> Self
+pub fn Lexer::next_token(Self) -> Token
+pub fn Lexer::read_rest_of_line(Self) -> String
+
+pub(all) struct LocalExecutor {
+}
+pub impl Executor for LocalExecutor
+
+pub(all) struct Manifest {
+  rules : Map[String, Rule]
+  builds : Array[BuildEdge]
+}
+
+pub struct Parser {
+  lexer : Lexer
+  mut current_token : Token
+}
+pub fn Parser::new(String) -> Self
+pub fn Parser::parse(Self) -> Manifest raise ParseError
+
+pub(all) struct Rule {
+  name : String
+  command : String
+}
+
+pub(all) struct Scheduler[E] {
+  graph : DepGraph
+  executor : E
+}
+pub fn[E] Scheduler::plan(Self[E], String) -> Result[Array[BuildEdge], String]
+pub fn[E : Executor] Scheduler::run_all(Self[E], String) -> Result[Unit, String]
+pub fn[E : Executor] Scheduler::run_incremental(Self[E], String, Map[String, Int]) -> Result[Array[String], String]
+pub fn[E : WaveExecutor] Scheduler::run_parallel_waves(Self[E], String) -> Result[Array[String], String]
+
+pub(all) enum Token {
+  Ident(String)
+  Colon
+  Equal
+  Pipe
+  PipePipe
+  Newline
+  Indent
+  Eof
+  Error(String)
+} derive(Eq, @debug.Debug)
+pub impl Show for Token
+
+// Type aliases
+
+// Traits
+pub trait Executor {
+  fn run(Self, BuildEdge, Map[String, Rule]) -> Result[Unit, String]
+}
+
+pub(open) trait WaveExecutor {
+  fn run_wave(Self, Array[BuildEdge], Map[String, Rule]) -> Result[Array[String], String]
+}

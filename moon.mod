@@ -14,7 +14,7 @@ keywords = [ "moonbit", "ninja", "build-system", "dag", "incremental-build" ]
 
 preferred_target = "wasm-gc"
 
-supported_targets = "+native+wasm+wasm-gc+js"
+supported_targets = "+native+wasm-gc+js"
 
 source = "src"
 

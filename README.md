@@ -7,9 +7,11 @@
 MoonNinja is a MoonBit-native subset Ninja build engine for OSC2026. It focuses on the core path that the acceptance review cares about most:
 
 - real `build.ninja`-style text parsing
-- dependency-graph construction with cycle detection
-- incremental rebuild decisions from file timestamp snapshots
-- schedulable command execution with `$in` and `$out` expansion
+- dependency-graph construction with Tarjan SCC diagnostics and cycle detection
+- incremental rebuild decisions from real native MTime plus content hash snapshots
+- deterministic lock-free dependency waves for host-provided parallel runners
+- native command execution and a real WASM-GC/JS host execution ABI
+- schedulable command rendering with `$in` and `$out` expansion
 - reproducible examples, tests, CI, and self-check scripts
 
 The project is intentionally scoped to a well-documented subset of Ninja so that the implementation remains readable, testable, and publishable as a MoonBit ecosystem package.
@@ -24,8 +26,11 @@ MoonNinja currently supports:
 - implicit and order-only dependencies written with `|` and `||`
 - comments beginning with `#`
 - topological traversal and cycle detection
-- incremental stale-check decisions driven by a file timestamp snapshot
-- native command execution and WASM-side mock execution
+- strongly connected component reporting for cyclic manifests
+- incremental stale-check decisions driven by MTime plus content fingerprints
+- native `stat`/streaming-hash snapshots through `src/native/native_stub.c`
+- native process execution through `system`
+- WASM-GC host import `moon_ninja.execute_command` and JS host import `MoonNinjaHost.execute_command`
 
 MoonNinja does not yet aim to be a drop-in replacement for the full Ninja specification. The repository documents this boundary explicitly and tests the supported subset end to end.
 
@@ -34,6 +39,7 @@ MoonNinja does not yet aim to be a drop-in replacement for the full Ninja specif
 ```bash
 moon fmt --check
 moon check --deny-warn
+moon build --target all
 moon test --deny-warn
 moon run src/main
 ```
@@ -42,6 +48,21 @@ Native backend validation:
 
 ```bash
 moon test --deny-warn --target native
+```
+
+The default demo is intentionally plan-only, so it is runnable on every
+backend. Native command execution is covered by the native-only integration
+test and requires a C compiler. WASM-GC command execution is not a fake local
+process: the host must provide an import named `moon_ninja.execute_command`
+whose argument is a MoonBit `String` and whose return value is an integer exit
+code. JavaScript hosts provide the equivalent `MoonNinjaHost.execute_command`.
+
+For the full backend matrix, run:
+
+```bash
+moon check --target all --deny-warn
+moon build --target all --deny-warn
+moon test --target all --deny-warn
 ```
 
 Acceptance self-check:
@@ -65,7 +86,19 @@ build main.o: cc main.c | generated.h
 build app: link main.o util.o
 ```
 
-The demo entry at [src/main/main.mbt](src/main/main.mbt) parses a manifest like the one above, builds a dependency graph, evaluates which targets are stale, and executes only the required commands.
+The demo entry at [src/main/main.mbt](src/main/main.mbt) parses a manifest like the one above, builds a dependency graph, evaluates which targets are stale, and prints the commands that would execute. `LocalExecutor` is available for native hosts; `DryRunExecutor` is used by the portable demo.
+
+## Design notes
+
+`DepGraph::strongly_connected_components` uses Tarjan's algorithm and reports
+the complete cyclic component. `DepGraph::parallel_waves` emits independent
+ready sets in deterministic order. `Scheduler::run_parallel_waves` never
+shares a mutable ready queue between waves; a native thread-pool or WASM host
+can implement `WaveExecutor` to run each wave concurrently.
+
+`FileFingerprint` stores seconds, nanoseconds, size, and a portable 64-bit
+content hash. The native adapter reads real file metadata and streams the file
+through the hash; equal timestamps therefore do not hide content changes.
 
 ## Repository Layout
 
@@ -79,10 +112,13 @@ MoonNinja/
 |  |- manifest.mbt              Manifest and command rendering
 |  |- lexer.mbt                 Tokenization for the supported Ninja subset
 |  |- parser.mbt                Parser for rule/build declarations
-|  |- graph.mbt                 Dependency graph and cycle detection
-|  |- incremental.mbt           Incremental rebuild decision logic
+|  |- graph.mbt                 SCC diagnostics and dependency waves
+|  |- incremental.mbt           MTime/hash rebuild decision logic
+|  |- fingerprint.mbt           Portable file identity model
 |  |- scheduler.mbt             Planning and incremental execution
+|  |- wave_executor.mbt         Lock-free wave runner interface
 |  |- local_executor.mbt        Native command execution adapter
+|  |- native/                   Native stat/hash adapter and integration test
 |  |- parser_test.mbt           Core-path tests
 |  `- main/main.mbt             Demo CLI entry
 |- official-requirements.md     OSC2026 requirement notes
@@ -112,15 +148,30 @@ moon publish --dry-run
 - The GitHub repo is used for CI and Mooncakes-facing metadata.
 - The GitLink repo is kept as the competition mirror and can remain single-contributor on that platform.
 
+## Reference projects and license boundary
+
+MoonNinja targets a documented subset of the Ninja file model. The
+interoperability references are:
+
+- [Ninja](https://github.com/ninja-build/ninja), an Apache-2.0 build system;
+  see its [license](https://github.com/ninja-build/ninja/blob/master/COPYING).
+- [n2](https://github.com/evmar/n2), a Ninja-compatible Apache-2.0 build
+  system; see its [license](https://github.com/evmar/n2/blob/main/LICENSE).
+
+No Ninja or n2 source is copied into this repository. Their syntax and public
+documentation are referenced only to define compatibility scope; this project
+contains original MoonBit code under its own Apache License 2.0.
+
 ## Verification Checklist
 
-- [x] `moon fmt --check`
-- [x] `moon check --deny-warn`
-- [x] `moon test --deny-warn`
-- [x] `moon test --deny-warn --target native`
+- [ ] `moon fmt --check` (run locally and in CI)
+- [ ] `moon check --target all --deny-warn`
+- [ ] `moon build --target all --deny-warn`
+- [ ] `moon test --target all --deny-warn`
+- [ ] native integration test with a system C compiler
 - [x] CI workflow for Linux, macOS, and Windows
 - [x] License file present
-- [x] README explains scope, usage, examples, and package metadata
+- [x] README explains scope, usage, examples, package metadata, and references
 - [x] Acceptance self-check script included
 
 ## License

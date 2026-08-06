@@ -51,6 +51,9 @@ Require-File "LICENSE"
 Require-File "moon.mod"
 Require-File "src/moon.pkg"
 Require-File "src/main/moon.pkg"
+Require-File "src/fingerprint.mbt"
+Require-File "src/wave_executor.mbt"
+Require-File "src/native/native_stub.c"
 Require-File ".github/workflows/test.yml"
 Require-File "examples/sample.build.ninja"
 Require-File "source-attribution.md"
@@ -60,6 +63,10 @@ $readme = Get-Content -Raw README.md
 Add-Check "README mentions Mooncakes" ($readme -match "Mooncakes") "README should explain publication metadata"
 Add-Check "README mentions CI" ($readme -match "\bCI\b") "README should point to automated verification"
 Add-Check "README mentions incremental" ($readme -match "incremental") "README should describe the core implementation path"
+Add-Check "README mentions SCC" ($readme -match "Tarjan|SCC") "README should describe cyclic graph handling"
+Add-Check "README mentions MTime/hash" ($readme -match "MTime.*hash|hash.*MTime") "README should describe real file identity"
+Add-Check "README mentions WASM host" ($readme -match "moon_ninja\.execute_command") "README should document the WASM host ABI"
+Add-Check "README references Ninja and n2" ($readme -match "ninja-build/ninja" -and $readme -match "evmar/n2") "README should identify compatibility references"
 
 $modContent = Get-Content -Raw moon.mod
 Add-Check "moon.mod repository" ($modContent -match 'repository = "') "repository metadata present"
@@ -76,10 +83,13 @@ Add-Check "MoonBit source scale" ($sourceLines -ge 250) "tracked .mbt/.mbti line
 
 Invoke-Checked "moon fmt --check" "moon fmt --check"
 Invoke-Checked "moon check --deny-warn" "moon check --deny-warn"
+Invoke-Checked "moon check --target all --deny-warn" "moon check --target all --deny-warn"
 Invoke-Checked "moon test --deny-warn" "moon test --deny-warn"
 
 $compiler = Get-Command cl,gcc,clang,cc -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($null -ne $compiler) {
+  Invoke-Checked "moon build --target all --deny-warn" "moon build --target all --deny-warn"
+  Invoke-Checked "moon test --target all --deny-warn" "moon test --target all --deny-warn"
   Invoke-Expression "moon test --deny-warn --target native" | Out-Null
   if ($LASTEXITCODE -ne 0) {
     Add-Check "moon test --deny-warn --target native" $false "native target failed with $($compiler.Name)"
@@ -87,8 +97,16 @@ if ($null -ne $compiler) {
   }
   Add-Check "moon test --deny-warn --target native" $true "passed with $($compiler.Name)"
 } else {
+  Invoke-Checked "moon build --target wasm-gc --deny-warn" "moon build --target wasm-gc --deny-warn"
+  Invoke-Checked "moon build --target js --deny-warn" "moon build --target js --deny-warn"
+  Invoke-Checked "moon test --target wasm-gc --deny-warn" "moon test --target wasm-gc --deny-warn"
+  Invoke-Checked "moon test --target js --deny-warn" "moon test --target js --deny-warn"
+  Add-Check "all-target build/test" $true "native build/test skipped locally: no system C compiler found, covered by CI"
   Add-Check "moon test --deny-warn --target native" $true "skipped locally: no system C compiler found, covered by CI"
 }
+
+$defaultBranch = git symbolic-ref --short refs/remotes/origin/HEAD 2>$null
+Add-Check "remote default branch" (-not [string]::IsNullOrWhiteSpace($defaultBranch)) "origin HEAD = $defaultBranch"
 
 if (-not $SkipRemote) {
   $originHead = git ls-remote --symref origin HEAD 2>$null

@@ -48,6 +48,69 @@ pub fn BuildEdge::evaluate_incremental(
 }
 
 ///|
+/// Compare current filesystem fingerprints with the previous build state.
+///
+/// This check intentionally combines content identity and MTime ordering:
+/// equal timestamps do not hide changed content, and newer inputs still make
+/// older outputs stale.
+pub fn BuildEdge::evaluate_fingerprints(
+  self : BuildEdge,
+  current : Map[String, FileFingerprint],
+  previous : Map[String, FileFingerprint],
+) -> BuildDecision {
+  if self.outputs.is_empty() {
+    return NeedsBuild("edge has no outputs")
+  }
+
+  for input in self.inputs {
+    match current.get(input) {
+      None => return NeedsBuild("missing input: " + input)
+      Some(now) =>
+        match previous.get(input) {
+          None =>
+            return NeedsBuild("input has no previous fingerprint: " + input)
+          Some(before) =>
+            if now != before {
+              return NeedsBuild("input changed: " + input)
+            }
+        }
+    }
+  }
+
+  for output in self.outputs {
+    match current.get(output) {
+      None => return NeedsBuild("missing output: " + output)
+      Some(now) =>
+        match previous.get(output) {
+          None =>
+            return NeedsBuild("output has no previous fingerprint: " + output)
+          Some(before) =>
+            if now != before {
+              return NeedsBuild("output changed externally: " + output)
+            }
+        }
+    }
+  }
+
+  for input in self.inputs {
+    match current.get(input) {
+      Some(input_fingerprint) =>
+        for output in self.outputs {
+          match current.get(output) {
+            Some(output_fingerprint) =>
+              if input_fingerprint.is_newer_than(output_fingerprint) {
+                return NeedsBuild("outputs are older than input: " + input)
+              }
+            None => return NeedsBuild("missing output: " + output)
+          }
+        }
+      None => return NeedsBuild("missing input: " + input)
+    }
+  }
+  UpToDate
+}
+
+///|
 pub fn BuildEdge::refresh_outputs(
   self : BuildEdge,
   snapshot : Map[String, Int],

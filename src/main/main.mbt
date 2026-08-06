@@ -17,7 +17,7 @@ fn main {
     println("Rule count: " + manifest.rules.length().to_string())
     println("Build edge count: " + manifest.builds.length().to_string())
     let graph = @src.DepGraph::build(manifest)
-    let executor = @src.LocalExecutor::{  }
+    let executor = @src.DryRunExecutor::{  }
     let scheduler = @src.Scheduler::{ graph, executor }
     let snapshot : Map[String, Int] = {
       "main.c": 10,

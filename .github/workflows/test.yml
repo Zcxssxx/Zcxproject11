@@ -1,17 +1,22 @@
-name: Test
+name: Check and Test
 
 on:
-  push:
   pull_request:
+  push:
+    branches:
+      - $default-branch
+
+permissions:
+  contents: read
 
 jobs:
-  test:
-    name: Test (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+  build:
+    name: MoonBit (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
 
     defaults:
       run:
@@ -20,57 +25,60 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
-      - name: Setup Moon env (Linux)
-        if: runner.os == 'Linux'
+      - name: Install native prerequisites on Linux
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc libssl-dev
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+          sudo apt-get install -y gcc
 
-      - name: Setup Moon env (macOS)
-        if: runner.os == 'macOS'
+      - name: Install native prerequisites on macOS
+        if: matrix.os == 'macos-latest'
+        run: brew install gcc
+
+      - name: Install MoonBit on Unix
+        if: matrix.os != 'windows-latest'
         run: |
-          brew install gcc openssl
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
-      - name: Setup Moon env (Windows)
-        if: runner.os == 'Windows'
+      - name: Install MoonBit on Windows
+        if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
           Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
           irm https://cli.moonbitlang.com/install/powershell.ps1 | iex
-          echo "$HOME/.moon/bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+          "C:\Users\runneradmin\.moon\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
 
-      - name: Setup MSYS2 + MinGW + openssl (Windows)
-        if: runner.os == 'Windows'
+      - name: Setup MSYS2 native toolchain on Windows
+        if: matrix.os == 'windows-latest'
         uses: msys2/setup-msys2@v2
         with:
           msystem: UCRT64
           update: true
           install: >-
             mingw-w64-ucrt-x86_64-gcc
-            mingw-w64-ucrt-x86_64-openssl
 
-      - name: Sync package registry
-        run: moon update
-
-      - name: Moon Check
+      - name: Verify toolchain and dependencies
         run: |
-          moon fmt --check
-          moon check --deny-warn
+          moon version --all
+          moon update
+
+      - name: Format, check, and inspect API
+        run: |
+          moon fmt
+          git diff --exit-code
+          moon check --target all --deny-warn
           moon info
           git diff --exit-code
-          git status --short
 
-      - name: Moon test
-        run: |
-          moon test --deny-warn --enable-coverage
-          moon coverage report -f summary
-          moon coverage analyze
+      - name: Build every declared target
+        run: moon build --target all --deny-warn
 
-          moon test --deny-warn --target native --enable-coverage
-          moon coverage report -f summary
-          moon coverage analyze
+      - name: Test every declared target
+        run: moon test --target all --deny-warn
+
+      - name: Re-run native integration target explicitly
+        run: moon test --target native --deny-warn

@@ -1,31 +1,32 @@
 # Submission Status
 
-Last updated: 2026-07-12
+Last updated: 2026-08-06
 
 ## Repository state
 
 - primary GitHub repo: `Zcxssxx/Zcxproject11`
 - competition mirror: `Zcxxffss/MoonNinja`
+- GitHub default branch: `main`
+- GitLink default branch: `master`
 - MoonBit module name: `Zcxssxx/moon-ninja`
 - license: Apache-2.0
 
 ## Acceptance readiness
 
-- formatting: ready after `moon fmt --check`
-- typecheck: ready after `moon check --deny-warn`
-- tests: ready after `moon test --deny-warn`
-- native tests: ready after `moon test --deny-warn --target native`
-- CI: ready via `.github/workflows/test.yml`
+- formatting: checked by `moon fmt --check` and CI
+- typecheck: checked by `moon check --target all --deny-warn`
+- build: checked by `moon build --target all --deny-warn`
+- tests: checked by `moon test --target all --deny-warn`
+- native tests: explicit CI step; local run requires a C compiler
+- CI: three OSes, all declared targets, build, test, fmt, and API diff
 - examples: ready via `examples/sample.build.ninja`
-- source explanation: ready via `source-attribution.md`
+- source explanation: ready via `source-attribution.md`, including Ninja/n2 references
 
 ## Remaining release actions
 
-- keep the synchronized final state on GitHub and GitLink default branches
+- keep the synchronized final state on GitHub `main` and GitLink `master`
 
 ## Mooncakes note
 
-- `moon whoami` confirms the owner account is `Zcxssxx`
-- `moon publish` completed successfully for `Zcxssxx/moon-ninja@0.1.1`
-- Mooncakes metadata now reports `latest_version = 0.1.1`
-- the public package metadata currently shows `build_status = queued`, which is the normal post-publish processing state
+- existing published version: `Zcxssxx/moon-ninja@0.1.1`
+- re-publish only after the owner session confirms CI is green

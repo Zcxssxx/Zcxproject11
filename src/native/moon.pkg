@@ -1,0 +1,10 @@
+import {
+  "Zcxssxx/moon-ninja" @core,
+  "moonbitlang/core/encoding/utf8",
+}
+
+supported_targets = "native"
+
+options(
+  "native-stub": [ "native_stub.c" ],
+)

@@ -7,9 +7,11 @@ MoonNinja is a self-contained MoonBit implementation written for the OSC2026 com
 - lexer for the supported Ninja subset
 - parser for `rule` and `build` declarations
 - dependency graph traversal and cycle detection
-- incremental rebuild decision logic based on timestamp snapshots
+- Tarjan strongly connected component diagnostics and deterministic dependency waves
+- incremental rebuild decision logic based on native MTime and content fingerprints
 - command rendering for `$in` and `$out`
-- native and WASM execution adapters
+- native `stat`/streaming-hash and `system` adapters
+- WASM-GC and JavaScript host execution adapters
 - acceptance verification script and CI wiring
 
 ## Deliberate scope boundary
@@ -22,8 +24,10 @@ This project implements a documented subset of Ninja rather than the full langua
 
 ## External references used only as standards or interoperability targets
 
-- Ninja file syntax as the conceptual compatibility target
+- [Ninja](https://github.com/ninja-build/ninja) file syntax and build semantics
+- [n2](https://github.com/evmar/n2) as a second Ninja-compatible implementation
 - MoonBit toolchain and Mooncakes publication rules
 - OSC2026 official public requirement pages
 
-No third-party source tree is vendored into this repository.
+Ninja and n2 are Apache-2.0 projects. Their licenses are linked above for
+reference; no third-party source tree is vendored into this repository.
