@@ -38,6 +38,13 @@ pub fn Parser::parse(self : Parser) -> Manifest raise ParseError {
                     if self.current_token == Equal {
                       self.advance()
                       let cmd = self.lexer.read_rest_of_line()
+                      if rules.contains(rule_name) {
+                        raise SyntaxError(
+                          "Duplicate rule declaration",
+                          line=self.lexer.line,
+                          col=self.lexer.col,
+                        )
+                      }
                       rules[rule_name] = { name: rule_name, command: cmd }
                       self.current_token = self.lexer.next_token()
                     } else {

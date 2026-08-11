@@ -1,0 +1,13 @@
+# A committed, reproducible workload used by the acceptance benchmark.
+rule cc
+  command = gcc -Iexamples/fixtures -c $in -o $out
+rule link
+  command = gcc $in -o $out
+rule archive
+  command = ar rcs $out $in
+
+build math.o: cc examples/fixtures/math.c | examples/fixtures/math.h
+build strings.o: cc examples/fixtures/strings.c
+build hello.o: cc examples/fixtures/hello.c | examples/fixtures/math.h
+build libmoon_ninja.a: archive math.o strings.o
+build moon_ninja_demo: link hello.o math.o

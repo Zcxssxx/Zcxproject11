@@ -1,8 +1,18 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 
 #include "moonbit.h"
+
+#include <stdatomic.h>
+
+#if defined(_WIN32)
+#include <windows.h>
+#else
+#include <pthread.h>
+#endif
 
 static const char *moon_ninja_path(moonbit_bytes_t path) {
   return (const char *)path;
@@ -56,4 +66,130 @@ uint64_t moon_ninja_file_hash(moonbit_bytes_t path) {
   }
   fclose(file);
   return hash;
+}
+
+typedef struct {
+  const char *commands;
+  int32_t count;
+  atomic_int next_index;
+  atomic_int failure_index;
+} moon_ninja_parallel_state;
+
+static const char *moon_ninja_command_at(
+    const char *commands,
+    int32_t count,
+    int32_t wanted) {
+  const char *cursor = commands;
+  for (int32_t index = 0; index < count; ++index) {
+    if (index == wanted) {
+      return cursor;
+    }
+    cursor += strlen(cursor) + 1;
+  }
+  return NULL;
+}
+
+static void moon_ninja_record_failure(
+    moon_ninja_parallel_state *state,
+    int32_t index) {
+  int desired = -(index + 1);
+  int current = atomic_load(&state->failure_index);
+  while ((current == 0 || desired > current) &&
+         !atomic_compare_exchange_weak(
+             &state->failure_index, &current, desired)) {
+  }
+}
+
+static void moon_ninja_run_worker(moon_ninja_parallel_state *state) {
+  for (;;) {
+    int32_t index = atomic_fetch_add(&state->next_index, 1);
+    if (index >= state->count) {
+      return;
+    }
+    const char *command =
+        moon_ninja_command_at(state->commands, state->count, index);
+    if (command == NULL || system(command) != 0) {
+      moon_ninja_record_failure(state, index);
+    }
+  }
+}
+
+#if defined(_WIN32)
+static DWORD WINAPI moon_ninja_windows_worker(void *raw_state) {
+  moon_ninja_run_worker((moon_ninja_parallel_state *)raw_state);
+  return 0;
+}
+#else
+static void *moon_ninja_posix_worker(void *raw_state) {
+  moon_ninja_run_worker((moon_ninja_parallel_state *)raw_state);
+  return NULL;
+}
+#endif
+
+MOONBIT_FFI_EXPORT
+int32_t moon_ninja_run_parallel_commands(
+    moonbit_bytes_t commands,
+    int32_t command_count,
+    int32_t worker_count) {
+  if (commands == NULL || command_count < 0 || worker_count < 1) {
+    return -1;
+  }
+  moon_ninja_parallel_state state = {
+      .commands = (const char *)commands,
+      .count = command_count,
+  };
+  if (state.count < 1) {
+    return 0;
+  }
+  if (worker_count > state.count) {
+    worker_count = state.count;
+  }
+  if (worker_count > 8) {
+    worker_count = 8;
+  }
+  atomic_init(&state.next_index, 0);
+  atomic_init(&state.failure_index, 0);
+
+#if defined(_WIN32)
+  HANDLE handles[8];
+  int32_t created = 0;
+  for (int32_t index = 0; index < worker_count; ++index) {
+    HANDLE handle = CreateThread(
+        NULL,
+        0,
+        moon_ninja_windows_worker,
+        &state,
+        0,
+        NULL);
+    if (handle == NULL) {
+      moon_ninja_record_failure(&state, 0);
+      break;
+    }
+    handles[created++] = handle;
+  }
+  if (created > 0) {
+    WaitForMultipleObjects((DWORD)created, handles, TRUE, INFINITE);
+    for (int32_t index = 0; index < created; ++index) {
+      CloseHandle(handles[index]);
+    }
+  }
+#else
+  pthread_t threads[8];
+  int32_t created = 0;
+  for (int32_t index = 0; index < worker_count; ++index) {
+    if (pthread_create(
+            &threads[created],
+            NULL,
+            moon_ninja_posix_worker,
+            &state) != 0) {
+      moon_ninja_record_failure(&state, 0);
+      break;
+    }
+    created += 1;
+  }
+  for (int32_t index = 0; index < created; ++index) {
+    pthread_join(threads[index], NULL);
+  }
+#endif
+  return atomic_load(&state.failure_index);
 }

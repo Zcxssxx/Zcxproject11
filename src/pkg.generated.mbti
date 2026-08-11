@@ -6,7 +6,17 @@ import {
 }
 
 // Values
+pub fn benchmark_from_ninja(String, String) -> Result[BenchmarkReport, String]
+
+pub fn diagnostics_for_graph(String) -> Diagnostic
+
+pub fn diagnostics_for_parse(ParseError) -> Diagnostic
+
+pub fn diagnostics_text(Array[Diagnostic]) -> String
+
 pub fn execute_command(String) -> Int
+
+pub fn synthetic_fixture(layer_count~ : Int, fanout~ : Int) -> Manifest
 
 // Errors
 pub suberror ParseError {
@@ -15,6 +25,25 @@ pub suberror ParseError {
 } derive(@debug.Debug)
 
 // Types and methods
+pub(all) struct BenchmarkReport {
+  summary : BenchmarkSummary
+  rendered_commands : Array[String]
+  wave_sizes : Array[Int]
+} derive(@debug.Debug)
+
+pub(all) struct BenchmarkSummary {
+  rule_count : Int
+  edge_count : Int
+  node_count : Int
+  dependency_depth : Int
+  wave_count : Int
+  max_wave_width : Int
+  fan_in : Int
+  fanout : Int
+  command_count : Int
+} derive(Eq, @debug.Debug)
+pub fn BenchmarkSummary::to_text(Self) -> String
+
 pub(all) enum BuildDecision {
   UpToDate
   NeedsBuild(String)
@@ -24,22 +53,41 @@ pub(all) struct BuildEdge {
   rule : String
   inputs : Array[String]
   outputs : Array[String]
-}
+} derive(Eq, @debug.Debug)
 pub fn BuildEdge::evaluate_fingerprints(Self, Map[String, FileFingerprint], Map[String, FileFingerprint]) -> BuildDecision
 pub fn BuildEdge::evaluate_incremental(Self, Map[String, Int]) -> BuildDecision
 pub fn BuildEdge::key(Self) -> String
 pub fn BuildEdge::refresh_outputs(Self, Map[String, Int], Int) -> Int
 pub fn BuildEdge::render_command(Self, Map[String, Rule]) -> Result[String, String]
+pub fn BuildEdge::to_ninja(Self) -> String
 
 pub(all) struct DepGraph {
   nodes : Map[String, BuildEdge]
   rules : Map[String, Rule]
   producer : Map[String, BuildEdge]
 }
+pub fn DepGraph::analyze(Self, String) -> Result[PlanAnalysis, String]
 pub fn DepGraph::build(Manifest) -> Self
 pub fn DepGraph::parallel_waves(Self, String) -> Result[Array[Array[BuildEdge]], String]
 pub fn DepGraph::strongly_connected_components(Self) -> Array[Array[String]]
 pub fn DepGraph::traverse(Self, String) -> Result[Array[BuildEdge], String]
+
+pub(all) struct Diagnostic {
+  kind : DiagnosticKind
+  code : String
+  message : String
+  subject : String
+  hint : String
+} derive(Eq, @debug.Debug)
+pub fn Diagnostic::to_text(Self) -> String
+
+pub(all) enum DiagnosticKind {
+  Parse
+  Validation
+  Graph
+  Execution
+} derive(Eq, @debug.Debug)
+pub impl Show for DiagnosticKind
 
 pub(all) struct DryRunExecutor {
 }
@@ -76,7 +124,14 @@ pub impl Executor for LocalExecutor
 pub(all) struct Manifest {
   rules : Map[String, Rule]
   builds : Array[BuildEdge]
-}
+} derive(Eq, @debug.Debug)
+pub fn Manifest::analyze(Self, String) -> Result[PlanAnalysis, String]
+pub fn Manifest::benchmark(Self, String) -> Result[BenchmarkReport, String]
+pub fn Manifest::diagnostics_for_manifest(Self) -> Array[Diagnostic]
+pub fn Manifest::is_valid(Self) -> Bool
+pub fn Manifest::to_ninja(Self) -> String
+pub fn Manifest::validate(Self) -> Result[Unit, String]
+pub fn Manifest::validation_issues(Self) -> Array[ValidationIssue]
 
 pub struct Parser {
   lexer : Lexer
@@ -85,10 +140,23 @@ pub struct Parser {
 pub fn Parser::new(String) -> Self
 pub fn Parser::parse(Self) -> Manifest raise ParseError
 
+pub(all) struct PlanAnalysis {
+  target : String
+  edge_count : Int
+  wave_count : Int
+  critical_path : Int
+  max_parallelism : Int
+  leaf_input_count : Int
+  produced_output_count : Int
+  leaf_inputs : Array[String]
+} derive(Eq, @debug.Debug)
+pub fn PlanAnalysis::to_text(Self) -> String
+
 pub(all) struct Rule {
   name : String
   command : String
-}
+} derive(Eq, @debug.Debug)
+pub fn Rule::to_ninja(Self) -> String
 
 pub(all) struct Scheduler[E] {
   graph : DepGraph
@@ -111,6 +179,19 @@ pub(all) enum Token {
   Error(String)
 } derive(Eq, @debug.Debug)
 pub impl Show for Token
+
+pub(all) struct ValidationIssue {
+  code : String
+  message : String
+  subject : String
+  severity : ValidationSeverity
+} derive(Eq, @debug.Debug)
+pub fn ValidationIssue::to_text(Self) -> String
+
+pub(all) enum ValidationSeverity {
+  Error
+  Warning
+} derive(Eq, @debug.Debug)
 
 // Type aliases
 

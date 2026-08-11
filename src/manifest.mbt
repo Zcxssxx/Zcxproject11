@@ -2,20 +2,20 @@
 pub(all) struct Rule {
   name : String
   command : String
-}
+} derive(Debug, Eq)
 
 ///|
 pub(all) struct BuildEdge {
   rule : String
   inputs : Array[String]
   outputs : Array[String]
-}
+} derive(Debug, Eq)
 
 ///|
 pub(all) struct Manifest {
   rules : Map[String, Rule]
   builds : Array[BuildEdge]
-}
+} derive(Debug, Eq)
 
 ///|
 pub fn BuildEdge::key(self : BuildEdge) -> String {

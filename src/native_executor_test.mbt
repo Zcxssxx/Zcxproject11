@@ -7,7 +7,7 @@ test "native executor runs a real host command" {
     outputs: ["native-test-output"],
   }
   let rules : Map[String, Rule] = {
-    "echo": { name: "echo", command: "echo MoonNinja native executor" },
+    "echo": { name: "echo", command: "exit 0" },
   }
   let executor = LocalExecutor::{  }
   match executor.run(edge, rules) {

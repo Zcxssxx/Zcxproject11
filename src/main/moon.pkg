@@ -2,4 +2,6 @@ import {
   "Zcxssxx/moon-ninja" @src,
 }
 
-pkgtype(kind: "executable")
+options(
+  "is-main": true,
+)

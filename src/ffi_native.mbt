@@ -1,6 +1,6 @@
 ///|
 #borrow(cmd)
-extern "c" fn system_ffi(cmd : Bytes) -> Int = "system"
+extern "c" fn system_ffi(cmd : Bytes) -> Int = "moon_ninja_execute_command"
 
 ///|
 pub fn execute_command(cmd : String) -> Int {

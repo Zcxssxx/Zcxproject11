@@ -54,10 +54,23 @@ Require-File "src/main/moon.pkg"
 Require-File "src/fingerprint.mbt"
 Require-File "src/wave_executor.mbt"
 Require-File "src/native/native_stub.c"
+Require-File "src/native/parallel_wave.mbt"
+Require-File "src/benchmark.mbt"
+Require-File "src/plan_analysis.mbt"
+Require-File "src/validation.mbt"
+Require-File "src/diagnostics.mbt"
+Require-File "src/native_stub.c"
 Require-File ".github/workflows/test.yml"
 Require-File "examples/sample.build.ninja"
+Require-File "examples/benchmarks/medium.build.ninja"
+Require-File "examples/fixtures/hello.c"
+Require-File "examples/fixtures/math.c"
+Require-File "examples/fixtures/math.h"
+Require-File "examples/fixtures/strings.c"
 Require-File "source-attribution.md"
 Require-File "submission-status.md"
+Require-File "CHANGELOG.md"
+Require-File "docs/acceptance/final-checklist.md"
 
 $readme = Get-Content -Raw README.md
 Add-Check "README mentions Mooncakes" ($readme -match "Mooncakes") "README should explain publication metadata"
@@ -67,6 +80,9 @@ Add-Check "README mentions SCC" ($readme -match "Tarjan|SCC") "README should des
 Add-Check "README mentions MTime/hash" ($readme -match "MTime.*hash|hash.*MTime") "README should describe real file identity"
 Add-Check "README mentions WASM host" ($readme -match "moon_ninja\.execute_command") "README should document the WASM host ABI"
 Add-Check "README references Ninja and n2" ($readme -match "ninja-build/ninja" -and $readme -match "evmar/n2") "README should identify compatibility references"
+Add-Check "README mentions benchmark fixtures" ($readme -match "medium\.build\.ninja" -and $readme -match "2,500") "README should document committed workload evidence"
+Add-Check "README mentions boundary tests" ($readme -match "boundary" -and $readme -match "order-only") "README should document edge coverage"
+Add-Check "README has no unfinished checklist" (-not ($readme -match "- \[ \]")) "README completion checklist must be closed out"
 
 $modContent = Get-Content -Raw moon.mod
 Add-Check "moon.mod repository" ($modContent -match 'repository = "') "repository metadata present"
@@ -76,10 +92,10 @@ Add-Check "moon.mod license" ($modContent -match 'license = "Apache-2.0"') "lice
 $commitCount = [int](git rev-list --count HEAD)
 Add-Check "commit history" ($commitCount -ge 10) "commit count = $commitCount"
 
-$sourceLines = git ls-files '*.mbt' '*.mbti' | ForEach-Object {
+$sourceLines = git ls-files '*.mbt' '*.mbti' '*.c' '*.h' | ForEach-Object {
   (Get-Content $_).Count
 } | Measure-Object -Sum | Select-Object -ExpandProperty Sum
-Add-Check "MoonBit source scale" ($sourceLines -ge 250) "tracked .mbt/.mbti lines = $sourceLines"
+Add-Check "MoonBit/C source scale" ($sourceLines -ge 2500) "tracked .mbt/.mbti/.c/.h lines = $sourceLines"
 
 Invoke-Checked "moon fmt --check" "moon fmt --check"
 Invoke-Checked "moon check --deny-warn" "moon check --deny-warn"

@@ -10,7 +10,9 @@ MoonNinja is a self-contained MoonBit implementation written for the OSC2026 com
 - Tarjan strongly connected component diagnostics and deterministic dependency waves
 - incremental rebuild decision logic based on native MTime and content fingerprints
 - command rendering for `$in` and `$out`
-- native `stat`/streaming-hash and `system` adapters
+- native `stat`/streaming-hash, `system`, and bounded atomic-index worker-pool adapters
+- committed original C benchmark fixtures and fixture-driven acceptance tests
+- benchmark summaries, plan analysis, validation, and actionable diagnostics
 - WASM-GC and JavaScript host execution adapters
 - acceptance verification script and CI wiring
 
@@ -30,4 +32,6 @@ This project implements a documented subset of Ninja rather than the full langua
 - OSC2026 official public requirement pages
 
 Ninja and n2 are Apache-2.0 projects. Their licenses are linked above for
-reference; no third-party source tree is vendored into this repository.
+reference; no third-party source tree is vendored into this repository. The
+MoonNinja source and original fixtures are released under the Apache License
+2.0 in this repository's `LICENSE` file.
