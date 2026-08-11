@@ -24,12 +24,13 @@ Last updated: 2026-08-11
 - source scale: over 2,500 tracked MoonBit/C lines, measured by the acceptance script
 - boundary coverage: parser, validation, graph-cycle, fingerprint, benchmark, diagnostics, and native execution tests
 
-## Remaining release actions
+## Release state
 
-- keep the synchronized final state on GitHub `main` and GitLink `master`
+- synchronized final state is on GitHub `main` and GitLink `master`
+- Mooncakes `0.2.0` published and independently resolved with `moon add`
 
 ## Mooncakes note
 
 - previous published version: `Zcxssxx/moon-ninja@0.1.2`
-- release candidate: `Zcxssxx/moon-ninja@0.2.0`
+- published version: `Zcxssxx/moon-ninja@0.2.0`
 - package upload and independent `moon add` resolution verified
