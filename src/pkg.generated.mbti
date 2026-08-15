@@ -14,6 +14,8 @@ pub fn build_path_extension(String) -> String
 
 pub fn build_path_stem(String) -> String
 
+pub fn build_report(String) -> BuildReport
+
 pub fn command_line_from_text(String) -> Result[CommandLine, String]
 
 pub fn compare_dependencies(String, Array[String], Array[String]) -> DependencyDiff
@@ -90,6 +92,39 @@ pub fn BuildEdge::refresh_outputs(Self, Map[String, Int], Int) -> Int
 pub fn BuildEdge::render_command(Self, Map[String, Rule]) -> Result[String, String]
 pub fn BuildEdge::render_command_with_variables(Self, Map[String, Rule], Map[String, String]) -> Result[String, String]
 pub fn BuildEdge::to_ninja(Self) -> String
+
+pub(all) struct BuildReport {
+  status : BuildReportStatus
+  target : String
+  waves : Int
+  commands : Int
+  cache_hits : Int
+  cache_misses : Int
+  failures : Array[String]
+  outputs : Array[String]
+} derive(Eq, @debug.Debug)
+pub fn BuildReport::cache_hit_percent(Self) -> Int
+pub fn BuildReport::cache_observations(Self) -> Int
+pub fn BuildReport::contains_output(Self, String) -> Bool
+pub fn BuildReport::executed_commands(Self) -> Int
+pub fn BuildReport::failure_summary(Self) -> String
+pub fn BuildReport::finish(Self) -> Self
+pub fn BuildReport::has_cache_reuse(Self) -> Bool
+pub fn BuildReport::is_success(Self) -> Bool
+pub fn BuildReport::is_terminal(Self) -> Bool
+pub fn BuildReport::merge(Self, Self) -> Self
+pub fn BuildReport::record_cache_hit(Self, String) -> Self
+pub fn BuildReport::record_cache_miss(Self, String) -> Self
+pub fn BuildReport::record_failure(Self, String) -> Self
+pub fn BuildReport::record_wave(Self, Int) -> Self
+pub fn BuildReport::to_text(Self) -> String
+pub fn BuildReport::validate(Self) -> Result[Unit, String]
+
+pub(all) enum BuildReportStatus {
+  Pending
+  Succeeded
+  Failed
+} derive(Eq, @debug.Debug)
 
 pub(all) struct BuildState {
   entries : Array[BuildStateEntry]
