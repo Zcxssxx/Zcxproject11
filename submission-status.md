@@ -36,5 +36,5 @@ Last updated: 2026-08-11
 ## Mooncakes note
 
 - previous published version: `Zcxssxx/moon-ninja@0.1.2`
-- published version: `Zcxssxx/moon-ninja@0.2.0`; next release: `0.3.0`
+- published version: `Zcxssxx/moon-ninja@0.3.0`
 - package upload and independent `moon add` resolution verified

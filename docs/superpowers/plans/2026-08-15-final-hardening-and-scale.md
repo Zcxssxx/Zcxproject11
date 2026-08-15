@@ -87,5 +87,5 @@
 - [x] Run targeted red-green tests, format, check, build, and test on WASM-GC/JS.
 - [x] Run native check/build/test from an ASCII path with GCC.
 - [x] Run the acceptance script and verify remote GitHub/GitLink heads and tree equality.
-- [ ] Push GitHub `main`, fast-forward GitHub `master`, push GitLink `master`, and fast-forward GitLink `main`.
-- [ ] Publish the monotonic Mooncakes version and independently resolve it.
+- [x] Push GitHub `main`, fast-forward GitHub `master`, push GitLink `master`, and fast-forward GitLink `main`.
+- [x] Publish the monotonic Mooncakes version and independently resolve it.
