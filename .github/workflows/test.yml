@@ -41,7 +41,7 @@ jobs:
       - name: Install MoonBit on Unix
         if: matrix.os != 'windows-latest'
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s 0.10.3+16975d007
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
       - name: Install MoonBit on Windows
@@ -49,6 +49,7 @@ jobs:
         shell: pwsh
         run: |
           Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+          $env:MOONBIT_INSTALL_VERSION = "0.10.3+16975d007"
           irm https://cli.moonbitlang.com/install/powershell.ps1 | iex
           "C:\Users\runneradmin\.moon\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
 
