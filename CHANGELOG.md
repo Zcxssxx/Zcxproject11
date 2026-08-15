@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1 - 2026-08-15
+
+- added deterministic build outcome reports for CI, cache statistics, failure
+  summaries, output tracking, merging, and invariant validation
+- refreshed generated public interfaces for the published API surface
+
 ## 0.3.0 - 2026-08-15
 
 - fixed GitHub Actions push coverage to the canonical `main` branch
