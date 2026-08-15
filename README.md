@@ -12,6 +12,8 @@ MoonNinja is a MoonBit-native subset Ninja build engine for OSC2026. It focuses 
 - deterministic lock-free dependency waves for host-provided parallel runners
 - native command execution through a bounded atomic-index worker pool and a real WASM-GC/JS host execution ABI
 - schedulable command rendering with `$in` and `$out` expansion
+- named variable expansion, Make-style depfile ingestion, and response-file materialization
+- deterministic inspectable build plans, persistent state sidecars, path safety, and command validation
 - reproducible examples, committed C benchmark inputs, boundary tests, CI, and self-check scripts
 
 The project is intentionally scoped to a well-documented subset of Ninja so that the implementation remains readable, testable, and publishable as a MoonBit ecosystem package.
@@ -32,6 +34,7 @@ MoonNinja currently supports:
 - native process execution through `system`
 - native parallel-wave execution through `NativeParallelWaveExecutor`, with bounded workers and deterministic failure indices
 - WASM-GC host import `moon_ninja.execute_command` and JS host import `MoonNinjaHost.execute_command`
+- portable `ExpansionContext`, `Depfile`, `MaterializedPlan`, `BuildState`, and `CommandLine` APIs
 
 MoonNinja does not yet aim to be a drop-in replacement for the full Ninja specification. The repository documents this boundary explicitly and tests the supported subset end to end.
 
@@ -97,6 +100,11 @@ a header dependency, archives two objects, and links a downstream demo. The
 inputs live in [examples/fixtures](examples/fixtures), so CI never depends on
 files that are created implicitly by a test.
 
+[examples/benchmarks/large.build.ninja](examples/benchmarks/large.build.ninja)
+adds ten independent compile edges, two header families, an archive, and a
+final link. It is intended for stable wave-width and transitive-input
+inspection rather than synthetic line counting.
+
 The public `Manifest::benchmark` and `Manifest::analyze` APIs report edge and
 node counts, dependency depth, wave width, fan-in/fan-out, leaf inputs, and
 rendered commands. `src/validation_test.mbt`, `src/graph_boundary_test.mbt`,
@@ -106,10 +114,19 @@ inputs, CRLF text, punctuation in paths, and missing/change-sensitive
 fingerprints.
 
 The checked-in implementation and tests contain more than 2,500 lines of
-MoonBit/C source. This is an evidence-based count performed by
+effective MoonBit source and more than 4,000 tracked MoonBit/C implementation
+and test/interface lines. These are evidence-based counts performed by
 `scripts/verify_acceptance.ps1`, not generated filler; the competition guidance
 also makes clear that maintainable scope and working evidence matter more than
 an arbitrary line count.
+
+For a target-level explanation, call `Manifest::inspect_target`. For a stable
+execution artifact, call `Manifest::materialize_plan`, then serialize
+`BuildState::to_text` after a successful host run. Compiler-generated depfiles
+can be parsed with `parse_depfile` and merged into the producing edge. Commands
+that use `@flags.rsp` can be expanded from an in-memory response-file table with
+`materialize_response_command`; no host filesystem access is required by these
+portable APIs.
 
 ## Design notes
 
@@ -145,6 +162,16 @@ MoonNinja/
 |  |- plan_analysis.mbt         Critical-path and parallelism analysis
 |  |- validation.mbt            Manifest validation diagnostics
 |  |- diagnostics.mbt           Actionable parse/graph diagnostics
+|  |- variable_expansion.mbt    Named and built-in command variables
+|  |- depfile.mbt               Make-style compiler dependency files
+|  |- response_file.mbt         Quoted response-file arguments
+|  |- build_plan.mbt            Stable materialized target plans
+|  |- build_state.mbt           Incremental state sidecar format
+|  |- path_utils.mbt            Cross-platform safe build paths
+|  |- command_line.mbt          Structured command rendering
+|  |- command_validation.mbt    Pre-execution command diagnostics
+|  |- target_inspection.mbt     Read-only dependency explanations
+|  |- dependency_diff.mbt       Stable depfile change reports
 |  |- native/                   Native stat/hash adapter, worker pool, and fixture tests
 |  |- parser_test.mbt           Core-path tests
 |  `- main/main.mbt             Demo CLI entry
@@ -192,6 +219,8 @@ contains original MoonBit code under its own Apache License 2.0.
 ## Verification Checklist
 
 - [x] `moon fmt --check` (run locally and in CI)
+- [x] CI push trigger is explicitly bound to GitHub `main`
+- [x] CI verifies MoonBit 0.10.3
 - [x] `moon check --target all --deny-warn`
 - [x] `moon build --target all --deny-warn`
 - [x] `moon test --target all --deny-warn`

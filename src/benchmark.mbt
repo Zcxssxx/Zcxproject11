@@ -6,6 +6,7 @@ pub(all) struct BenchmarkSummary {
   dependency_depth : Int
   wave_count : Int
   max_wave_width : Int
+  critical_path : Int
   fan_in : Int
   fanout : Int
   command_count : Int
@@ -32,6 +33,8 @@ pub fn BenchmarkSummary::to_text(self : BenchmarkSummary) -> String {
   self.wave_count.to_string() +
   " max_wave_width=" +
   self.max_wave_width.to_string() +
+  " critical_path=" +
+  self.critical_path.to_string() +
   " fan_in=" +
   self.fan_in.to_string() +
   " fanout=" +
@@ -134,6 +137,7 @@ pub fn Manifest::benchmark(
             dependency_depth: waves.length(),
             wave_count: waves.length(),
             max_wave_width,
+            critical_path: waves.length(),
             fan_in: benchmark_fan_in(edges),
             fanout: benchmark_fanout(edges),
             command_count: rendered_commands.length(),

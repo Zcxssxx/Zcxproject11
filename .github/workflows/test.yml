@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches:
-      - $default-branch
+      - main
 
 permissions:
   contents: read
@@ -63,7 +63,8 @@ jobs:
 
       - name: Verify toolchain and dependencies
         run: |
-          moon version --all
+          moon version --all | tee moon-toolchain-version.txt
+          grep -q "0.10.3" moon-toolchain-version.txt
           moon update
 
       - name: Format, check, and inspect API

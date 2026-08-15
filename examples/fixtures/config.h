@@ -1,0 +1,6 @@
+#ifndef MOON_NINJA_CONFIG_H
+#define MOON_NINJA_CONFIG_H
+
+#define MOON_NINJA_FEATURE 1
+
+#endif

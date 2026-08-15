@@ -16,6 +16,8 @@ committed in the repository and rerunnable with MoonBit 0.10.3.
 | License and references | `LICENSE`, `source-attribution.md`, README reference section |
 | Public development history | GitHub `main` and GitLink `master` commit logs, `CHANGELOG.md` |
 | Package metadata | `moon.mod`, `moon publish --dry-run`, independent `moon add` resolution |
+| Command/tooling usability | `src/variable_expansion.mbt`, `src/depfile.mbt`, `src/response_file.mbt`, `src/command_line.mbt` |
+| Deterministic incremental artifacts | `src/build_plan.mbt`, `src/build_state.mbt`, `src/target_inspection.mbt` |
 
 ## Reproducible commands
 
@@ -29,4 +31,5 @@ moon test --target all --deny-warn
 On a native host with GCC/Clang, the final command also runs the real worker
 pool and committed-fixture checks. `scripts/verify_acceptance.ps1` additionally
 checks the default branch, documentation, license metadata, commit history,
-fixture presence, and the honest 2,500-line tracked source threshold.
+fixture presence, CI branch/toolchain configuration, and the honest
+4,000-line tracked source threshold.

@@ -63,16 +63,21 @@ Require-File "src/native_stub.c"
 Require-File ".github/workflows/test.yml"
 Require-File "examples/sample.build.ninja"
 Require-File "examples/benchmarks/medium.build.ninja"
+Require-File "examples/benchmarks/large.build.ninja"
 Require-File "examples/fixtures/hello.c"
 Require-File "examples/fixtures/math.c"
 Require-File "examples/fixtures/math.h"
 Require-File "examples/fixtures/strings.c"
+Require-File "examples/fixtures/config.h"
+Require-File "examples/fixtures/parser.c"
+Require-File "examples/fixtures/codec.c"
 Require-File "source-attribution.md"
 Require-File "submission-status.md"
 Require-File "CHANGELOG.md"
 Require-File "docs/acceptance/final-checklist.md"
 
 $readme = Get-Content -Raw README.md
+$workflow = Get-Content -Raw .github/workflows/test.yml
 Add-Check "README mentions Mooncakes" ($readme -match "Mooncakes") "README should explain publication metadata"
 Add-Check "README mentions CI" ($readme -match "\bCI\b") "README should point to automated verification"
 Add-Check "README mentions incremental" ($readme -match "incremental") "README should describe the core implementation path"
@@ -82,7 +87,10 @@ Add-Check "README mentions WASM host" ($readme -match "moon_ninja\.execute_comma
 Add-Check "README references Ninja and n2" ($readme -match "ninja-build/ninja" -and $readme -match "evmar/n2") "README should identify compatibility references"
 Add-Check "README mentions benchmark fixtures" ($readme -match "medium\.build\.ninja" -and $readme -match "2,500") "README should document committed workload evidence"
 Add-Check "README mentions boundary tests" ($readme -match "boundary" -and $readme -match "order-only") "README should document edge coverage"
+Add-Check "README mentions portable tooling" ($readme -match "depfile" -and $readme -match "response") "README should document practical build-tool APIs"
 Add-Check "README has no unfinished checklist" (-not ($readme -match "- \[ \]")) "README completion checklist must be closed out"
+Add-Check "CI targets canonical GitHub branch" ($workflow -match "branches:\s*\r?\n\s*-\s*main" -and $workflow -notmatch '\$default-branch') "CI must trigger on main"
+Add-Check "CI checks MoonBit 0.10.3" ($workflow -match "0\.10\.3") "CI must verify the committee toolchain"
 
 $modContent = Get-Content -Raw moon.mod
 Add-Check "moon.mod repository" ($modContent -match 'repository = "') "repository metadata present"
@@ -95,9 +103,14 @@ Add-Check "commit history" ($commitCount -ge 10) "commit count = $commitCount"
 $sourceLines = git ls-files '*.mbt' '*.mbti' '*.c' '*.h' | ForEach-Object {
   (Get-Content $_).Count
 } | Measure-Object -Sum | Select-Object -ExpandProperty Sum
-Add-Check "MoonBit/C source scale" ($sourceLines -ge 2500) "tracked .mbt/.mbti/.c/.h lines = $sourceLines"
+Add-Check "MoonBit/C source scale" ($sourceLines -gt 4000) "tracked .mbt/.mbti/.c/.h lines = $sourceLines"
 
 Invoke-Checked "moon fmt --check" "moon fmt --check"
+ $toolchainText = (moon version --all | Out-String)
+Add-Check "MoonBit 0.10.3 local toolchain" ($toolchainText -match "0\.10\.3") "moon version --all contains 0.10.3"
+if ($toolchainText -notmatch "0\.10\.3") {
+  throw "MoonBit 0.10.3 is required for acceptance verification"
+}
 Invoke-Checked "moon check --deny-warn" "moon check --deny-warn"
 Invoke-Checked "moon check --target all --deny-warn" "moon check --target all --deny-warn"
 Invoke-Checked "moon test --deny-warn" "moon test --deny-warn"

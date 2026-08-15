@@ -2,7 +2,7 @@
 
 This repository is maintained against the current public OSC2026 guidance and the pre-acceptance feedback returned by the committee.
 
-## Official requirements rechecked on 2026-08-11
+## Official requirements rechecked on 2026-08-15
 
 - proposal window: 2026-04-29 to 2026-07-10
 - acceptance window: 2026-07-11 to 2026-07-17
@@ -19,6 +19,8 @@ This repository is maintained against the current public OSC2026 guidance and th
 - committed C inputs with measured benchmark reports and native fixture hashing
 - native atomic-index worker-pool execution for an independent dependency wave
 - actionable validation/diagnostic APIs and boundary regression tests
+- practical build-tool APIs for variables, depfiles, response files, plan
+  inspection, state persistence, path safety, and command validation
 
 ## Review focus derived from the committee feedback
 
@@ -28,7 +30,10 @@ This repository is maintained against the current public OSC2026 guidance and th
 4. The implementation must expose real SCC, MTime+hash, lock-free wave planning, and native/WASM host execution paths.
 5. Mooncakes metadata should be recognizable and publishable.
 6. Tests and examples should cover the main execution path, real inputs, and failure boundaries.
-7. The source count is reported from tracked MoonBit/C files; it is above 2,500 without generated filler.
+7. The source count is reported from tracked MoonBit/C files; pure `.mbt`
+   source is above 4,000 without generated filler.
+8. GitHub CI must trigger on the canonical `main` branch and verify MoonBit
+   0.10.3, while GitLink keeps `master` as its canonical mirror branch.
 
 The official site describes 4-10k effective MoonBit LOC as a reference range,
 while emphasizing usable scope, complete documentation, runnable tests, and

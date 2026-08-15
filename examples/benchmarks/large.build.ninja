@@ -1,0 +1,20 @@
+# A larger committed workload for plan inspection and wave-width regression.
+rule cc
+  command = gcc -Iexamples/fixtures -c $in -o $out
+rule archive
+  command = ar rcs $out $in
+rule link
+  command = gcc $in -o $out
+
+build math.o: cc examples/fixtures/math.c | examples/fixtures/math.h
+build strings.o: cc examples/fixtures/strings.c | examples/fixtures/math.h
+build hello.o: cc examples/fixtures/hello.c | examples/fixtures/math.h
+build parser.o: cc examples/fixtures/parser.c | examples/fixtures/config.h
+build codec.o: cc examples/fixtures/codec.c | examples/fixtures/config.h
+build math-copy.o: cc examples/fixtures/math.c | examples/fixtures/math.h
+build strings-copy.o: cc examples/fixtures/strings.c | examples/fixtures/math.h
+build hello-copy.o: cc examples/fixtures/hello.c | examples/fixtures/math.h
+build parser-copy.o: cc examples/fixtures/parser.c | examples/fixtures/config.h
+build codec-copy.o: cc examples/fixtures/codec.c | examples/fixtures/config.h
+build libmoon_ninja_large.a: archive math.o strings.o hello.o parser.o codec.o math-copy.o strings-copy.o hello-copy.o parser-copy.o codec-copy.o
+build moon_ninja_large_demo: link libmoon_ninja_large.a hello.o parser.o codec.o

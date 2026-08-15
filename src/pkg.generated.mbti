@@ -8,6 +8,16 @@ import {
 // Values
 pub fn benchmark_from_ninja(String, String) -> Result[BenchmarkReport, String]
 
+pub fn build_path_directory(String) -> String
+
+pub fn build_path_extension(String) -> String
+
+pub fn build_path_stem(String) -> String
+
+pub fn command_line_from_text(String) -> Result[CommandLine, String]
+
+pub fn compare_dependencies(String, Array[String], Array[String]) -> DependencyDiff
+
 pub fn diagnostics_for_graph(String) -> Diagnostic
 
 pub fn diagnostics_for_parse(ParseError) -> Diagnostic
@@ -15,6 +25,24 @@ pub fn diagnostics_for_parse(ParseError) -> Diagnostic
 pub fn diagnostics_text(Array[Diagnostic]) -> String
 
 pub fn execute_command(String) -> Int
+
+pub fn expand_command(String, ExpansionContext) -> String
+
+pub fn expand_command_checked(String, ExpansionContext) -> Result[String, String]
+
+pub fn is_relative_build_path(String) -> Bool
+
+pub fn join_build_path(Array[String]) -> Result[String, String]
+
+pub fn materialize_response_command(String, Map[String, String]) -> Result[Array[String], String]
+
+pub fn normalize_build_path(String) -> Result[String, String]
+
+pub fn parse_build_state(String) -> Result[BuildState, String]
+
+pub fn parse_depfile(String) -> Result[Depfile, String]
+
+pub fn parse_response_file(String) -> Result[Array[String], String]
 
 pub fn synthetic_fixture(layer_count~ : Int, fanout~ : Int) -> Manifest
 
@@ -38,6 +66,7 @@ pub(all) struct BenchmarkSummary {
   dependency_depth : Int
   wave_count : Int
   max_wave_width : Int
+  critical_path : Int
   fan_in : Int
   fanout : Int
   command_count : Int
@@ -59,7 +88,41 @@ pub fn BuildEdge::evaluate_incremental(Self, Map[String, Int]) -> BuildDecision
 pub fn BuildEdge::key(Self) -> String
 pub fn BuildEdge::refresh_outputs(Self, Map[String, Int], Int) -> Int
 pub fn BuildEdge::render_command(Self, Map[String, Rule]) -> Result[String, String]
+pub fn BuildEdge::render_command_with_variables(Self, Map[String, Rule], Map[String, String]) -> Result[String, String]
 pub fn BuildEdge::to_ninja(Self) -> String
+
+pub(all) struct BuildState {
+  entries : Array[BuildStateEntry]
+} derive(Eq, @debug.Debug)
+pub fn BuildState::find(Self, String) -> BuildStateEntry?
+pub fn BuildState::from_plan(MaterializedPlan) -> Self
+pub fn BuildState::needs_rebuild(Self, String, String) -> Bool
+pub fn BuildState::to_text(Self) -> String
+
+pub(all) struct BuildStateEntry {
+  edge_key : String
+  command_hash : String
+  outputs : Array[String]
+} derive(Eq, @debug.Debug)
+
+pub(all) struct CommandIssue {
+  argument_index : Int
+  code : String
+  message : String
+} derive(Eq, @debug.Debug)
+pub fn CommandIssue::to_text(Self) -> String
+
+pub(all) struct CommandLine {
+  executable : String
+  arguments : Array[String]
+} derive(Eq, @debug.Debug)
+pub fn CommandLine::append(Self, String) -> Self
+pub fn CommandLine::has_unsafe_argument(Self) -> Bool
+pub fn CommandLine::is_valid(Self) -> Bool
+pub fn CommandLine::new(executable~ : String, arguments~ : Array[String]) -> Self
+pub fn CommandLine::to_response_file(Self) -> String
+pub fn CommandLine::to_shell_text(Self) -> String
+pub fn CommandLine::validate(Self) -> Array[CommandIssue]
 
 pub(all) struct DepGraph {
   nodes : Map[String, BuildEdge]
@@ -71,6 +134,19 @@ pub fn DepGraph::build(Manifest) -> Self
 pub fn DepGraph::parallel_waves(Self, String) -> Result[Array[Array[BuildEdge]], String]
 pub fn DepGraph::strongly_connected_components(Self) -> Array[Array[String]]
 pub fn DepGraph::traverse(Self, String) -> Result[Array[BuildEdge], String]
+
+pub(all) struct DependencyDiff {
+  target : String
+  added : Array[String]
+  removed : Array[String]
+  unchanged : Array[String]
+} derive(Eq, @debug.Debug)
+pub fn DependencyDiff::to_text(Self) -> String
+
+pub(all) struct Depfile {
+  target : String
+  dependencies : Array[String]
+} derive(Eq, @debug.Debug)
 
 pub(all) struct Diagnostic {
   kind : DiagnosticKind
@@ -96,6 +172,13 @@ pub impl Executor for DryRunExecutor
 pub(all) struct DryRunWaveExecutor {
 }
 pub impl WaveExecutor for DryRunWaveExecutor
+
+pub(all) struct ExpansionContext {
+  inputs : Array[String]
+  outputs : Array[String]
+  variables : Map[String, String]
+} derive(Eq, @debug.Debug)
+pub fn ExpansionContext::new(inputs~ : Array[String], outputs~ : Array[String], variables~ : Map[String, String]) -> Self
 
 pub(all) struct FileFingerprint {
   mtime_seconds : Int64
@@ -126,12 +209,26 @@ pub(all) struct Manifest {
   builds : Array[BuildEdge]
 } derive(Eq, @debug.Debug)
 pub fn Manifest::analyze(Self, String) -> Result[PlanAnalysis, String]
+pub fn Manifest::apply_depfile(Self, Depfile) -> Result[Self, String]
 pub fn Manifest::benchmark(Self, String) -> Result[BenchmarkReport, String]
 pub fn Manifest::diagnostics_for_manifest(Self) -> Array[Diagnostic]
+pub fn Manifest::inspect_target(Self, String) -> Result[TargetInspection, String]
 pub fn Manifest::is_valid(Self) -> Bool
+pub fn Manifest::materialize_plan(Self, String, Map[String, String]) -> Result[MaterializedPlan, String]
 pub fn Manifest::to_ninja(Self) -> String
 pub fn Manifest::validate(Self) -> Result[Unit, String]
 pub fn Manifest::validation_issues(Self) -> Array[ValidationIssue]
+
+pub(all) struct MaterializedPlan {
+  target : String
+  edges : Array[BuildEdge]
+  waves : Array[Array[BuildEdge]]
+  commands : Array[String]
+  inputs : Array[String]
+  outputs : Array[String]
+  critical_path : Int
+} derive(Eq, @debug.Debug)
+pub fn MaterializedPlan::to_text(Self) -> String
 
 pub struct Parser {
   lexer : Lexer
@@ -166,6 +263,18 @@ pub fn[E] Scheduler::plan(Self[E], String) -> Result[Array[BuildEdge], String]
 pub fn[E : Executor] Scheduler::run_all(Self[E], String) -> Result[Unit, String]
 pub fn[E : Executor] Scheduler::run_incremental(Self[E], String, Map[String, Int]) -> Result[Array[String], String]
 pub fn[E : WaveExecutor] Scheduler::run_parallel_waves(Self[E], String) -> Result[Array[String], String]
+
+pub(all) struct TargetInspection {
+  target : String
+  producer_key : String?
+  direct_inputs : Array[String]
+  transitive_inputs : Array[String]
+  outputs : Array[String]
+  leaf_inputs : Array[String]
+  edge_count : Int
+  depth : Int
+} derive(Eq, @debug.Debug)
+pub fn TargetInspection::to_text(Self) -> String
 
 pub(all) enum Token {
   Ident(String)
