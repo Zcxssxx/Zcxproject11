@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2 - 2026-08-16
+
+- migrated the executable package metadata to the latest MoonBit package syntax;
+- aligned local acceptance checks and three-platform CI with MoonBit 0.10.7;
+- documented reproducible toolchain selection and verification commands.
+
 ## 0.3.1 - 2026-08-15
 
 - added deterministic build outcome reports for CI, cache statistics, failure
