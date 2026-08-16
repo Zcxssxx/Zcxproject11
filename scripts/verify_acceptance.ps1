@@ -124,6 +124,8 @@ if ($toolchainText -notmatch "0\.10\.7") {
 }
 Invoke-Checked "moon check --deny-warn" "moon check --deny-warn"
 Invoke-Checked "moon check --target all --deny-warn" "moon check --target all --deny-warn"
+Invoke-Checked "moon info" "moon info"
+Invoke-Checked "generated API files are clean" "git diff --exit-code"
 Invoke-Checked "moon test --deny-warn" "moon test --deny-warn"
 
 $compiler = Get-Command cl,gcc,clang,cc -ErrorAction SilentlyContinue | Select-Object -First 1
