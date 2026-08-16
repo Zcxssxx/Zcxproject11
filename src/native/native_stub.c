@@ -6,12 +6,54 @@
 
 #include "moonbit.h"
 
-#include <stdatomic.h>
-
 #if defined(_WIN32)
 #include <windows.h>
+
+typedef volatile LONG moon_ninja_atomic_int;
+
+static void moon_ninja_atomic_init(moon_ninja_atomic_int *value, int initial) {
+  *value = (LONG)initial;
+}
+
+static int moon_ninja_atomic_load(const moon_ninja_atomic_int *value) {
+  return (int)InterlockedCompareExchange((volatile LONG *)value, 0, 0);
+}
+
+static int moon_ninja_atomic_fetch_add(moon_ninja_atomic_int *value, int delta) {
+  return (int)InterlockedExchangeAdd(value, (LONG)delta);
+}
+
+static int moon_ninja_atomic_compare_exchange(
+    moon_ninja_atomic_int *value, int *expected, int desired) {
+  LONG observed = InterlockedCompareExchange(value, (LONG)desired, (LONG)*expected);
+  if (observed == (LONG)*expected) {
+    return 1;
+  }
+  *expected = (int)observed;
+  return 0;
+}
 #else
 #include <pthread.h>
+#include <stdatomic.h>
+
+typedef atomic_int moon_ninja_atomic_int;
+
+static void moon_ninja_atomic_init(moon_ninja_atomic_int *value, int initial) {
+  atomic_init(value, initial);
+}
+
+static int moon_ninja_atomic_load(const moon_ninja_atomic_int *value) {
+  return atomic_load(value);
+}
+
+static int moon_ninja_atomic_fetch_add(moon_ninja_atomic_int *value, int delta) {
+  return atomic_fetch_add(value, delta);
+}
+
+static int moon_ninja_atomic_compare_exchange(
+    moon_ninja_atomic_int *value, int *expected, int desired) {
+  return atomic_compare_exchange_weak(value, expected, desired);
+}
 #endif
 
 static const char *moon_ninja_path(moonbit_bytes_t path) {
@@ -71,8 +113,8 @@ uint64_t moon_ninja_file_hash(moonbit_bytes_t path) {
 typedef struct {
   const char *commands;
   int32_t count;
-  atomic_int next_index;
-  atomic_int failure_index;
+  moon_ninja_atomic_int next_index;
+  moon_ninja_atomic_int failure_index;
 } moon_ninja_parallel_state;
 
 static const char *moon_ninja_command_at(
@@ -93,16 +135,16 @@ static void moon_ninja_record_failure(
     moon_ninja_parallel_state *state,
     int32_t index) {
   int desired = -(index + 1);
-  int current = atomic_load(&state->failure_index);
+  int current = moon_ninja_atomic_load(&state->failure_index);
   while ((current == 0 || desired > current) &&
-         !atomic_compare_exchange_weak(
+         !moon_ninja_atomic_compare_exchange(
              &state->failure_index, &current, desired)) {
   }
 }
 
 static void moon_ninja_run_worker(moon_ninja_parallel_state *state) {
   for (;;) {
-    int32_t index = atomic_fetch_add(&state->next_index, 1);
+    int32_t index = moon_ninja_atomic_fetch_add(&state->next_index, 1);
     if (index >= state->count) {
       return;
     }
@@ -147,8 +189,8 @@ int32_t moon_ninja_run_parallel_commands(
   if (worker_count > 8) {
     worker_count = 8;
   }
-  atomic_init(&state.next_index, 0);
-  atomic_init(&state.failure_index, 0);
+  moon_ninja_atomic_init(&state.next_index, 0);
+  moon_ninja_atomic_init(&state.failure_index, 0);
 
 #if defined(_WIN32)
   HANDLE handles[8];
@@ -191,5 +233,5 @@ int32_t moon_ninja_run_parallel_commands(
     pthread_join(threads[index], NULL);
   }
 #endif
-  return atomic_load(&state.failure_index);
+  return moon_ninja_atomic_load(&state.failure_index);
 }
