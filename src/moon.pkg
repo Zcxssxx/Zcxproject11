@@ -3,6 +3,7 @@ import {
 }
 
 options(
+  link: { "native": { "cc": "cc" } },
   "native-stub": [ "native_stub.c" ],
   targets: {
     "ffi_native.mbt": [ "native" ],

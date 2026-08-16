@@ -3,3 +3,7 @@ import {
 }
 
 pkgtype(kind: "executable")
+
+options(
+  link: { "native": { "cc": "cc" } },
+)
