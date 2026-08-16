@@ -75,6 +75,17 @@ Acceptance self-check:
 powershell -ExecutionPolicy Bypass -File .\scripts\verify_acceptance.ps1
 ```
 
+验收脚本默认使用当前 `PATH` 中的 MoonBit。正式验收使用最新的
+MoonBit `0.10.7+bc794d341`，也可以显式传入同版本工具链目录：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\verify_acceptance.ps1 `
+  -MoonBitBin "<path-to-moonbit-0.10.7-bin>"
+```
+
+脚本会先校验 `moon.exe`、`moonc.exe` 和 `moonrun.exe` 三个工具均存在，再执行
+格式化、全目标检查、构建和测试；CI 与本地验收使用同一版本。
+
 ## Example
 
 Example input file: [examples/sample.build.ninja](examples/sample.build.ninja)
@@ -220,7 +231,7 @@ contains original MoonBit code under its own Apache License 2.0.
 
 - [x] `moon fmt --check` (run locally and in CI)
 - [x] CI push trigger is explicitly bound to GitHub `main`
-- [x] CI verifies MoonBit 0.10.3
+- [x] CI verifies MoonBit 0.10.7
 - [x] `moon check --target all --deny-warn`
 - [x] `moon build --target all --deny-warn`
 - [x] `moon test --target all --deny-warn`

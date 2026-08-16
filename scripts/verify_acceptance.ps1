@@ -1,4 +1,5 @@
 param(
+  [string]$MoonBitBin,
   [switch]$SkipRemote,
   [switch]$SkipMooncakes
 )
@@ -8,6 +9,16 @@ Set-StrictMode -Version Latest
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $repoRoot
+
+if (-not [string]::IsNullOrWhiteSpace($MoonBitBin)) {
+  $resolvedMoonBitBin = (Resolve-Path -LiteralPath $MoonBitBin -ErrorAction Stop).Path
+  foreach ($tool in @("moon.exe", "moonc.exe", "moonrun.exe")) {
+    if (-not (Test-Path -LiteralPath (Join-Path $resolvedMoonBitBin $tool))) {
+      throw "MoonBit toolchain is incomplete: missing $tool in $resolvedMoonBitBin"
+    }
+  }
+  $env:Path = $resolvedMoonBitBin + ";" + $env:Path
+}
 
 $checks = [System.Collections.Generic.List[object]]::new()
 
@@ -90,7 +101,7 @@ Add-Check "README mentions boundary tests" ($readme -match "boundary" -and $read
 Add-Check "README mentions portable tooling" ($readme -match "depfile" -and $readme -match "response") "README should document practical build-tool APIs"
 Add-Check "README has no unfinished checklist" (-not ($readme -match "- \[ \]")) "README completion checklist must be closed out"
 Add-Check "CI targets canonical GitHub branch" ($workflow -match "branches:\s*\r?\n\s*-\s*main" -and $workflow -notmatch '\$default-branch') "CI must trigger on main"
-Add-Check "CI checks MoonBit 0.10.3" ($workflow -match "0\.10\.3") "CI must verify the committee toolchain"
+Add-Check "CI checks MoonBit 0.10.7" ($workflow -match "0\.10\.7") "CI must verify the latest toolchain"
 
 $modContent = Get-Content -Raw moon.mod
 Add-Check "moon.mod repository" ($modContent -match 'repository = "') "repository metadata present"
@@ -107,9 +118,9 @@ Add-Check "MoonBit/C source scale" ($sourceLines -gt 4000) "tracked .mbt/.mbti/.
 
 Invoke-Checked "moon fmt --check" "moon fmt --check"
  $toolchainText = (moon version --all | Out-String)
-Add-Check "MoonBit 0.10.3 local toolchain" ($toolchainText -match "0\.10\.3") "moon version --all contains 0.10.3"
-if ($toolchainText -notmatch "0\.10\.3") {
-  throw "MoonBit 0.10.3 is required for acceptance verification"
+Add-Check "MoonBit 0.10.7 local toolchain" ($toolchainText -match "0\.10\.7") "moon version --all contains 0.10.7"
+if ($toolchainText -notmatch "0\.10\.7") {
+  throw "MoonBit 0.10.7 is required for acceptance verification"
 }
 Invoke-Checked "moon check --deny-warn" "moon check --deny-warn"
 Invoke-Checked "moon check --target all --deny-warn" "moon check --target all --deny-warn"

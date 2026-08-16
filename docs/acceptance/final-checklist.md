@@ -1,7 +1,7 @@
 # Final Acceptance Checklist
 
 This checklist maps the committee rejection feedback to evidence that is
-committed in the repository and rerunnable with MoonBit 0.10.3.
+committed in the repository and rerunnable with MoonBit 0.10.7.
 
 | Review concern | Evidence |
 | --- | --- |
